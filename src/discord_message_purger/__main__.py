@@ -88,12 +88,12 @@ def main() -> None:
 
     log_path = _setup_logging()
     logger = logging.getLogger("discord_message_purger")
-    logger.info("=== Запуск Discord Message Purger ===")
-    logger.info("Файл журнала: %s", log_path)
+    logger.info("=== Starting Discord Message Purger ===")
+    logger.info("Log file: %s", log_path)
 
     app = QApplication(sys.argv)
 
-    QLocale.setDefault(QLocale(QLocale.Language.Russian, QLocale.Country.Russia))
+    QLocale.setDefault(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
 
     session = Session()
 
@@ -116,7 +116,7 @@ def main() -> None:
     token_manager = TokenManager(http_client, session)
     controller = OperationController(
         scanner=scanner,
-        deleter=deleter,  # type: ignore[arg-type]  # LazyDeleter реализует DeleterProtocol
+        deleter=deleter,  # type: ignore[arg-type]  # LazyDeleter implements DeleterProtocol
         operation_log=operation_log,
         session=session,
     )

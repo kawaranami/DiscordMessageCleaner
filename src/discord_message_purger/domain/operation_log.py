@@ -51,9 +51,9 @@ class OperationLog:
             new_processed = self.processed + 1
             if new_processed > self.found_total:
                 raise AssertionError(
-                    "Нарушение инварианта processed <= found_total: "
-                    f"попытка установить processed={new_processed} "
-                    f"при found_total={self.found_total}"
+                    "Invariant violation processed <= found_total: "
+                    f"attempted to set processed={new_processed} "
+                    f"while found_total={self.found_total}"
                 )
             self.processed = new_processed
         elif entry.status is LogEntryStatus.CHANNEL_SKIPPED:
@@ -65,8 +65,8 @@ class OperationLog:
     def update_total(self, new: int) -> None:
         if self.processed > new:
             raise AssertionError(
-                "Нарушение инварианта processed <= found_total: "
-                f"попытка установить found_total={new} при "
+                "Invariant violation processed <= found_total: "
+                f"attempted to set found_total={new} while "
                 f"processed={self.processed}"
             )
         self.found_total = new

@@ -40,15 +40,15 @@ class HttpClient(Protocol):
     ) -> object: ...
 
 
-_BUTTON_START: Final[str] = "Запустить операцию"
-_BUTTON_RETRY: Final[str] = "Повторить"
-_MSG_NO_SERVERS: Final[str] = "Доступных серверов нет"
-_MSG_AUTH_ERROR: Final[str] = "Ошибка авторизации. Токен недействителен или истёк."
-_MSG_FORBIDDEN_ERROR: Final[str] = "Доступ запрещён. Недостаточно прав."
-_MSG_SERVER_ERROR: Final[str] = "Ошибка сервера Discord. Попробуйте позже."
-_MSG_NETWORK_ERROR: Final[str] = "Ошибка сети. Проверьте подключение к интернету."
-_MSG_TIMEOUT_ERROR: Final[str] = "Превышено время ожидания ответа от Discord."
-_MSG_UNKNOWN_ERROR: Final[str] = "Произошла непредвиденная ошибка."
+_BUTTON_START: Final[str] = "Start operation"
+_BUTTON_RETRY: Final[str] = "Retry"
+_MSG_NO_SERVERS: Final[str] = "No servers available"
+_MSG_AUTH_ERROR: Final[str] = "Authorization error. The token is invalid or expired."
+_MSG_FORBIDDEN_ERROR: Final[str] = "Access forbidden. Insufficient permissions."
+_MSG_SERVER_ERROR: Final[str] = "Discord server error. Please try again later."
+_MSG_NETWORK_ERROR: Final[str] = "Network error. Check your internet connection."
+_MSG_TIMEOUT_ERROR: Final[str] = "Request to Discord timed out."
+_MSG_UNKNOWN_ERROR: Final[str] = "An unexpected error occurred."
 
 
 class _LoadServersWorker(QThread):
@@ -59,11 +59,11 @@ class _LoadServersWorker(QThread):
         self.servers: list[dict] | None = None
         self.error: BaseException | None = None
 
-    def run(self) -> None:  # noqa: D401 - переопределение QThread.run
+    def run(self) -> None:  # noqa: D401 - overrides QThread.run
         try:
             response = self._http.get("/users/@me/guilds", timeout_s=10.0)
             self.servers = response.json()
-        except BaseException as exc:  # noqa: BLE001 — намеренно широко
+        except BaseException as exc:  # noqa: BLE001 - intentionally broad
             self.error = exc
 
 

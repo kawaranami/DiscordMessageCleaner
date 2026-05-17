@@ -1,45 +1,38 @@
 # Discord Message Purger
 
-選択した Discord サーバー内に投稿した自分自身のメッセージを一括削除するデスクトップアプリケーションです。GUI には PySide6 を使用しています。
+自分が Discord サーバーに投稿したメッセージを一括で消すためのツールです。気軽に使えるように GUI を付けてあります。
 
-## 注意事項
+Discord の利用規約ではユーザートークンを使った自動化は禁止されているので、最悪アカウントが BAN される可能性があります。自己責任でどうぞ。アプリ起動時に確認ダイアログが出ます。
 
-Discord 利用規約およびコミュニティガイドラインは、ユーザートークンを用いた自動化（いわゆるセルフボット）を明確に禁止しています。本ツールの使用によりアカウントが永久停止される可能性があります。リスクを理解した上で自己責任にて使用してください。起動時に同意ダイアログで確認を求めます。
+## 必要なもの
 
-## 動作環境
+Windows と Python 3.11 以降。ソースから動かす場合は以下で依存関係を入れます。
 
-- Windows 10 / 11
-- Python 3.11 以上（ソースから実行する場合）
-
-## 開発環境のセットアップ
-
-```bash
+```
 pip install -e .[dev]
 ```
 
-## 起動
+## 動かし方
 
-```bash
+```
 python -m discord_message_purger
 ```
 
-## テスト
-
-```bash
-pytest
-```
+トークンを入れて、サーバーを選んで、サーバー名を入力すれば削除が始まります。
 
 ## ビルド
 
-PyInstaller を使用して単一の実行ファイルを作成します。
+実行ファイルを作りたい場合は PyInstaller を使います。
 
-```bash
+```
 pip install pyinstaller
 pyinstaller packaging/discord_message_purger.spec
 ```
 
-成果物は `dist/DiscordMessagePurger.exe` に出力されます。
+`dist/DiscordMessagePurger.exe` ができます。
 
-## ライセンス
+## テスト
 
-未定。
+```
+pytest
+```

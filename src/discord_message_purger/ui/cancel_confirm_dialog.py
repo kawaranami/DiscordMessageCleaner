@@ -18,16 +18,16 @@ DialogMode = Literal["cancel_operation", "close_app"]
 
 _TEXTS: dict[DialogMode, dict[str, str]] = {
     "cancel_operation": {
-        "title": "Подтверждение отмены",
-        "message": "Подтвердить отмену операции?",
-        "accept": "Да, отменить",
-        "reject": "Нет",
+        "title": "Confirm",
+        "message": "Cancel the running operation?",
+        "accept": "Yes, cancel",
+        "reject": "No",
     },
     "close_app": {
-        "title": "Закрытие приложения",
-        "message": "Операция удаления не завершена. Закрыть приложение?",
-        "accept": "Закрыть",
-        "reject": "Отмена",
+        "title": "Confirm",
+        "message": "The deletion operation is still running. Close the application?",
+        "accept": "Close",
+        "reject": "Cancel",
     },
 }
 
@@ -43,8 +43,8 @@ class CancelConfirmDialog(QDialog):
 
         if mode not in _TEXTS:
             raise ValueError(
-                f"Недопустимый режим CancelConfirmDialog: {mode!r}. "
-                f"Ожидается одно из: {tuple(_TEXTS)}"
+                f"Invalid CancelConfirmDialog mode: {mode!r}. "
+                f"Expected one of: {tuple(_TEXTS)}"
             )
 
         self._mode: DialogMode = mode

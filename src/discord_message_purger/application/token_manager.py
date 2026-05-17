@@ -44,7 +44,7 @@ class AuthResult:
 
         return cls(
             status="invalid_token",
-            error_message=message or "Токен недействителен",
+            error_message=message or "Invalid token",
         )
 
     @classmethod
@@ -74,9 +74,9 @@ class TokenManager:
 
         try:
             self._session.token = token
-        except Exception as exc:  # noqa: BLE001 — намеренно широкий перехват.
+        except Exception as exc:  # noqa: BLE001 - intentionally broad.
             return AuthResult.storage_error(
-                f"Не удалось сохранить токен в сессии: {type(exc).__name__}"
+                f"Failed to store token in session: {type(exc).__name__}"
             )
 
         try:
@@ -87,45 +87,45 @@ class TokenManager:
         except DiscordTimeoutError:
             self._restore(previous_token, previous_user_id)
             return AuthResult.network_error(
-                "Истёк таймаут ожидания ответа Discord_API"
+                "Discord API request timed out"
             )
         except DiscordNetworkError:
             self._restore(previous_token, previous_user_id)
             return AuthResult.network_error(
-                "Сбой сети при обращении к Discord_API"
+                "Network error when calling Discord API"
             )
         except RateLimitTooLongError as exc:
             self._restore(previous_token, previous_user_id)
             return AuthResult.network_error(
-                f"Discord_API запросил ожидание {exc.retry_after_seconds:.0f} с"
+                f"Discord API requested wait of {exc.retry_after_seconds:.0f}s"
             )
         except DiscordHttpError as exc:
             self._restore(previous_token, previous_user_id)
             return AuthResult.network_error(
-                f"Discord_API ответил кодом {exc.status}"
+                f"Discord API returned status {exc.status}"
             )
 
         try:
             payload = response.json()
-        except Exception as exc:  # noqa: BLE001 — httpx может бросить разное.
+        except Exception as exc:  # noqa: BLE001 - httpx may raise various.
             self._restore(previous_token, previous_user_id)
             return AuthResult.storage_error(
-                f"Не удалось разобрать ответ Discord_API: {type(exc).__name__}"
+                f"Failed to parse Discord API response: {type(exc).__name__}"
             )
 
         user_id = self._extract_user_id(payload)
         if user_id is None:
             self._restore(previous_token, previous_user_id)
             return AuthResult.storage_error(
-                "Discord_API не вернул идентификатор пользователя"
+                "Discord API did not return user ID"
             )
 
         try:
             self._session.authenticated_user_id = user_id
-        except Exception as exc:  # noqa: BLE001 — Требование 2.5.
+        except Exception as exc:  # noqa: BLE001 - Requirement 2.5.
             self._restore(previous_token, previous_user_id)
             return AuthResult.storage_error(
-                f"Не удалось сохранить идентификатор пользователя: "
+                f"Failed to store user ID: "
                 f"{type(exc).__name__}"
             )
 
@@ -147,7 +147,7 @@ class TokenManager:
             return None
         try:
             user_id = str(raw)
-        except Exception:  # noqa: BLE001 — str(...) на странных объектах.
+        except Exception:  # noqa: BLE001 - str(...) on weird objects.
             return None
         if not user_id:
             return None

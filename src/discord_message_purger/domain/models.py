@@ -21,21 +21,21 @@ class ChannelType(IntEnum):
 
 class LogEntryStatus(StrEnum):
 
-    SUCCESS = "Успех"
-    NOT_FOUND = "Не найдено"
-    ERROR = "Ошибка"
-    REJECTED = "Отклонено"
-    CHANNEL_SKIPPED = "Канал пропущен"
+    SUCCESS = "Success"
+    NOT_FOUND = "Not found"
+    ERROR = "Error"
+    REJECTED = "Rejected"
+    CHANNEL_SKIPPED = "Channel skipped"
 
 
 class OperationState(StrEnum):
 
-    IDLE = "Не запущено"
-    RUNNING = "Выполняется"
-    PAUSED = "Приостановлено"
-    COMPLETED = "Завершено"
-    CANCELED = "Отменено"
-    ERROR = "Ошибка"
+    IDLE = "Idle"
+    RUNNING = "Running"
+    PAUSED = "Paused"
+    COMPLETED = "Completed"
+    CANCELED = "Canceled"
+    ERROR = "Error"
 
 
 @dataclass(frozen=True, slots=True)

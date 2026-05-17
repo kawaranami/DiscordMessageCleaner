@@ -15,15 +15,19 @@ from PySide6.QtWidgets import (
 from discord_message_purger.domain.models import Server
 
 
-_BUTTON_CONFIRM = "Подтвердить"
-_BUTTON_CANCEL = "Отмена"
+_BUTTON_CONFIRM = "Confirm"
+_BUTTON_CANCEL = "Cancel"
 
 _INPUT_MAX_LENGTH = 100
 
 _MESSAGE_TEMPLATE = (
-    "Будут удалены ВСЕ сообщения вашего аккаунта во всех доступных "
-    "каналах сервера {name}. Действие необратимо."
+    "All messages from your account in all accessible channels of "
+    "'{name}' will be deleted. This action cannot be undone."
 )
+
+_TITLE_TEMPLATE = "Confirm operation on server '{name}'"
+
+_INPUT_PLACEHOLDER = "Type the server name to confirm"
 
 
 class ConfirmationDialog(QDialog):
@@ -38,7 +42,7 @@ class ConfirmationDialog(QDialog):
         self.setModal(True)
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
-        self.setWindowTitle(f"Подтверждение запуска: {self._expected_name}")
+        self.setWindowTitle(_TITLE_TEMPLATE.format(name=self._expected_name))
 
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
@@ -83,7 +87,7 @@ class ConfirmationDialog(QDialog):
 
         self._input = QLineEdit(self)
         self._input.setMaxLength(_INPUT_MAX_LENGTH)
-        self._input.setPlaceholderText(self._expected_name)
+        self._input.setPlaceholderText(_INPUT_PLACEHOLDER)
 
         self._button_box = QDialogButtonBox(self)
         self._confirm_button = QPushButton(_BUTTON_CONFIRM, self)

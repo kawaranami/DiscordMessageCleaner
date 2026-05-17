@@ -110,12 +110,12 @@ class OperationController(QObject):
                 message_timestamp=None,
                 http_status=None,
                 error_type="auth",
-                description="Идентификатор пользователя отсутствует или пуст",
+                description="User ID is missing or empty",
             )
             self._emit_log_entry(entry)
             self._set_state_force(OperationState.ERROR)
             raise MissingAuthenticatedUserError(
-                "authenticated_user_id отсутствует или пуст"
+                "authenticated_user_id is missing or empty"
             )
 
         self._ctx = OperationContext(
@@ -163,38 +163,38 @@ class OperationController(QObject):
         assert self._ctx is not None  # noqa: S101
 
         try:
-            logger.info("Worker стартовал")
+            logger.info("Worker started")
             self._transition_state(OperationState.RUNNING)
 
             server = self._ctx.server
             assert server is not None  # noqa: S101
-            logger.info("Запрашиваем список каналов сервера %s (%s)", server.name, server.id)
+            logger.info("Fetching channels for guild %s (%s)", server.name, server.id)
             channels = self._scanner.list_channels(server.id)
-            logger.info("Получено каналов: %d", len(channels))
+            logger.info("Channels received: %d", len(channels))
             for ch in channels:
-                logger.debug("  Канал %s (%s, type=%s)", ch.name, ch.id, ch.type)
+                logger.debug("  Channel %s (%s, type=%s)", ch.name, ch.id, ch.type)
 
             all_messages: list[Message] = []
             for channel in channels:
                 if self._ctx.check_cancelled():
-                    logger.info("Сканирование отменено пользователем")
+                    logger.info("Scan canceled by user")
                     return
 
-                logger.info("Сканирование канала %s (%s)", channel.name, channel.id)
+                logger.info("Scanning channel %s (%s)", channel.name, channel.id)
                 channel_msg_count = 0
                 for message in self._scanner.scan_channel(
                     channel, self._ctx.authenticated_user_id, self._ctx
                 ):
                     if self._ctx.check_cancelled():
-                        logger.info("Сканирование отменено пользователем")
+                        logger.info("Scan canceled by user")
                         return
                     all_messages.append(message)
                     channel_msg_count += 1
                     self._operation_log.update_total(len(all_messages))
                     self.progress_changed.emit(0, len(all_messages))
-                logger.info("В канале %s найдено сообщений пользователя: %d", channel.name, channel_msg_count)
+                logger.info("Channel %s: %d user messages found", channel.name, channel_msg_count)
 
-            logger.info("ФАЗА 1 завершена. Всего найдено: %d", len(all_messages))
+            logger.info("Phase 1 complete. Total found: %d", len(all_messages))
 
             self._operation_log.update_total(len(all_messages))
             self.progress_changed.emit(0, len(all_messages))
@@ -225,12 +225,12 @@ class OperationController(QObject):
         except MissingAuthenticatedUserError as exc:
             self._handle_fatal_error(str(exc))
         except IllegalStateTransition:
-            logger.exception("Нелегальный переход состояния в worker-потоке")
+            logger.exception("Illegal state transition in worker thread")
         except Exception:
-            logger.exception("Непредвиденная ошибка в worker-потоке")
+            logger.exception("Unexpected error in worker thread")
             import traceback
             traceback.print_exc()
-            self._handle_fatal_error("Непредвиденная ошибка")
+            self._handle_fatal_error("Unexpected error")
 
 
     def _handle_auth_error(self) -> None:

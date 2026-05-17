@@ -35,11 +35,11 @@ _PAGE_LOGIN = 0
 _PAGE_SERVER_SELECTOR = 1
 _PAGE_PROGRESS = 2
 
-_BUTTON_PAUSE = "Пауза"
-_BUTTON_RESUME = "Возобновить"
-_BUTTON_CANCEL = "Отмена"
+_BUTTON_PAUSE = "Pause"
+_BUTTON_RESUME = "Resume"
+_BUTTON_CANCEL = "Cancel"
 
-_MSG_AUTH_LOST = "Токен недействителен"
+_MSG_AUTH_LOST = "Invalid token"
 
 _WINDOW_TITLE = "Discord Message Purger"
 

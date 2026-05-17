@@ -12,24 +12,20 @@ from PySide6.QtWidgets import (
 )
 
 
-_CHECKBOX_LABEL = "Я понимаю риски и беру ответственность на себя"
+_CHECKBOX_LABEL = "I understand the risks and accept responsibility"
 
-_WINDOW_TITLE = "Подтверждение рисков использования"
+_WINDOW_TITLE = "Disclaimer"
 
 _WARNING_TEXT = (
-    "Внимание: использование пользовательского токена для автоматизации "
-    "нарушает Discord Terms of Service и может привести к блокировке "
-    "аккаунта без возможности восстановления.\n\n"
-    "Приложение Discord Message Purger удаляет ваши собственные сообщения "
-    "от имени вашего аккаунта через ваш токен. Все риски, связанные с "
-    "использованием такого режима работы, лежат на вас.\n\n"
-    "Чтобы продолжить, отметьте поле ниже и нажмите «Продолжить». "
-    "Если вы не готовы принять эти риски — нажмите «Отмена», и "
-    "приложение завершит работу."
+    "Discord's Terms of Service prohibit automating actions on user "
+    "accounts via user tokens (so-called self-bots). Using this "
+    "application may result in your Discord account being permanently "
+    "banned. By proceeding, you accept full responsibility for any "
+    "consequences."
 )
 
-_BUTTON_CONTINUE = "Продолжить"
-_BUTTON_CANCEL = "Отмена"
+_BUTTON_CONTINUE = "Continue"
+_BUTTON_CANCEL = "Cancel"
 
 
 class ConsentDialog(QDialog):

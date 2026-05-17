@@ -31,26 +31,25 @@ _PROCESSED_STATUSES: Final[frozenset[LogEntryStatus]] = frozenset(
     }
 )
 
-_BUTTON_SAVE_LOG: Final[str] = "Сохранить журнал в файл"
+_BUTTON_SAVE_LOG: Final[str] = "Save log to file"
 
-_FILE_DIALOG_TITLE: Final[str] = "Сохранить журнал операции"
+_FILE_DIALOG_TITLE: Final[str] = "Save operation log"
 _FILE_DIALOG_FILTER: Final[str] = (
-    "Текстовые файлы (*.txt);;Все файлы (*)"
+    "Text files (*.txt);;All files (*)"
 )
 _FILE_DIALOG_DEFAULT_NAME: Final[str] = "operation_log.txt"
 
-_SAVE_ERROR_TITLE: Final[str] = "Не удалось сохранить журнал"
+_SAVE_ERROR_TITLE: Final[str] = "Failed to save log"
 _SAVE_ERROR_TEMPLATE: Final[str] = (
-    "Не удалось записать журнал в файл «{path}».\nПричина: {reason}"
+    "Failed to write log to '{path}'.\nReason: {reason}"
 )
 
 _RATE_LIMIT_LABEL_TEMPLATE: Final[str] = (
-    "Ожидание Discord API — {reason}: осталось {seconds} с"
+    "Waiting for Discord API ({reason}): {seconds}s remaining"
 )
 
 _SUMMARY_TEMPLATE: Final[str] = (
-    "Итог операции: успех — {success}, не найдено — {not_found}, "
-    "ошибки — {errors}"
+    "Summary: success {success}, not found {not_found}, errors {errors}"
 )
 
 _NON_MESSAGE_LINE_TEMPLATE: Final[str] = (
@@ -151,8 +150,8 @@ class ProgressDisplay(QWidget):
 
         if self._processed > new_total:
             raise AssertionError(
-                "Нарушение инварианта processed <= total: "
-                f"попытка установить total={new_total} при "
+                "Invariant violation processed <= total: "
+                f"attempted to set total={new_total} while "
                 f"processed={self._processed}"
             )
         self._total = new_total
@@ -240,42 +239,42 @@ class ProgressDisplay(QWidget):
     def _format_eta(self, seconds: float) -> str:
         s = int(seconds)
         if s < 60:
-            return f"{s} сек"
+            return f"{s}s"
         if s < 3600:
             m = s // 60
             sec = s % 60
-            return f"{m} мин {sec} сек"
+            return f"{m}m {sec}s"
         h = s // 3600
         m = (s % 3600) // 60
-        return f"{h} ч {m} мин"
+        return f"{h}h {m}m"
 
     def _update_stats_header(self) -> None:
         remaining = max(0, self._total - self._processed)
 
         if self._processed == 0 and self._total > 0:
             self._stats_header.setText(
-                f"Сканирование... Найдено сообщений: {self._total}"
+                f"Scanning... Found {self._total} messages"
             )
             eta_seconds = self._total * 0.5
             self._eta_label.setText(
-                f"Примерное время удаления: ~{self._format_eta(eta_seconds)}"
+                f"Estimated deletion time: ~{self._format_eta(eta_seconds)}"
             )
         elif self._processed == 0 and self._total == 0:
-            self._stats_header.setText("Ожидание...")
+            self._stats_header.setText("Waiting...")
             self._eta_label.setText("")
         else:
             self._stats_header.setText(
-                f"Найдено: {self._total} | "
-                f"Удалено: {self._processed} | "
-                f"Осталось: {remaining}"
+                f"Found: {self._total} | "
+                f"Deleted: {self._processed} | "
+                f"Remaining: {remaining}"
             )
             eta_seconds = remaining * 0.5
             if remaining > 0:
                 self._eta_label.setText(
-                    f"Примерное время: ~{self._format_eta(eta_seconds)}"
+                    f"Estimated time: ~{self._format_eta(eta_seconds)}"
                 )
             else:
-                self._eta_label.setText("Готово")
+                self._eta_label.setText("Done")
 
     def _render_entry(
         self, entry: OperationLogEntry, processed_snapshot: int

@@ -115,8 +115,8 @@ class MessageScanner:
             or authenticated_user_id.strip() == ""
         ):
             raise MissingAuthenticatedUserError(
-                "Идентификатор авторизованного пользователя отсутствует "
-                "или пуст; сканирование канала не выполняется"
+                "Authenticated user ID is missing or empty; "
+                "channel scan will not run"
             )
 
         before: str | None = None
@@ -140,7 +140,7 @@ class MessageScanner:
                         message_timestamp=None,
                         http_status=403,
                         error_type=None,
-                        description="доступ запрещён",
+                        description="access forbidden",
                     )
                 )
                 return

@@ -189,11 +189,11 @@ class DiscordHttpClient:
                 )
             except httpx.TimeoutException as exc:
                 raise DiscordTimeoutError(
-                    f"Истёк таймаут {timeout_s:g} с при запросе {method} {path}"
+                    f"Timeout {timeout_s:g}s on request {method} {path}"
                 ) from exc
             except httpx.NetworkError as exc:
                 raise DiscordNetworkError(
-                    f"Сбой сети при запросе {method} {path}: {exc!r}"
+                    f"Network error on request {method} {path}: {exc!r}"
                 ) from exc
 
             self._rate_limiter.after_response(route_key, response)
@@ -240,7 +240,7 @@ class DiscordHttpClient:
         raise DiscordHttpError(
             status=status,
             body=body,
-            message=f"Неожиданный HTTP-статус {status}",
+            message=f"Unexpected HTTP status {status}",
         )
 
     @staticmethod
@@ -248,5 +248,5 @@ class DiscordHttpClient:
 
         try:
             return response.text
-        except Exception:  # noqa: BLE001 — намеренно глушим всё.
+        except Exception:  # noqa: BLE001 - intentionally swallow everything.
             return ""

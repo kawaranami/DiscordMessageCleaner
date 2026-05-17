@@ -133,15 +133,15 @@ class MessageDeleter:
         except (DiscordServerError, DiscordNetworkError, DiscordTimeoutError) as exc:
             if isinstance(exc, DiscordServerError):
                 error_type = "api"
-                description = f"HTTP {exc.status} после исчерпания повторов"
+                description = f"HTTP {exc.status} after retry exhaustion"
                 http_status = exc.status
             elif isinstance(exc, DiscordNetworkError):
                 error_type = "network"
-                description = f"Сетевая ошибка после исчерпания повторов: {exc!s}"[:500]
+                description = f"Network error after retry exhaustion: {exc!s}"[:500]
                 http_status = None
             else:
                 error_type = "network"
-                description = f"Таймаут после исчерпания повторов: {exc!s}"[:500]
+                description = f"Timeout after retry exhaustion: {exc!s}"[:500]
                 http_status = None
 
             entry = OperationLogEntry(

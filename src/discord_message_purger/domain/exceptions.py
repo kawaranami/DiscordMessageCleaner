@@ -88,7 +88,7 @@ class DiscordServerError(DiscordHttpError):
     def __init__(self, status: int, body: str = "", message: str | None = None) -> None:
         if not 500 <= status <= 599:
             raise ValueError(
-                f"DiscordServerError допустим только для статусов 5xx, получено {status}"
+                f"DiscordServerError is only valid for 5xx statuses, got {status}"
             )
         super().__init__(status=status, body=body, message=message)
 
@@ -98,11 +98,11 @@ class DiscordOtherClientError(DiscordHttpError):
     def __init__(self, status: int, body: str = "", message: str | None = None) -> None:
         if not 400 <= status <= 499:
             raise ValueError(
-                f"DiscordOtherClientError допустим только для статусов 4xx, получено {status}"
+                f"DiscordOtherClientError is only valid for 4xx statuses, got {status}"
             )
         if status in {401, 403, 404, 429}:
             raise ValueError(
-                "Для статусов 401/403/404/429 используйте специализированные подклассы"
+                "Use specialized subclasses for 401/403/404/429 statuses"
             )
         super().__init__(status=status, body=body, message=message)
 
@@ -123,8 +123,8 @@ class RateLimitTooLongError(DiscordPurgerError):
             message
             if message is not None
             else (
-                f"Discord запросил ожидание {retry_after_seconds:.3f} с, "
-                "это превышает допустимый порог"
+                f"Discord requested wait of {retry_after_seconds:.3f}s, "
+                "which exceeds the allowed threshold"
             )
         )
         super().__init__(rendered)
@@ -142,7 +142,7 @@ class IllegalStateTransition(DiscordPurgerError):
         rendered = (
             message
             if message is not None
-            else f"Нелегальный переход состояния: {current!r} -> {target!r}"
+            else f"Illegal state transition: {current!r} -> {target!r}"
         )
         super().__init__(rendered)
 

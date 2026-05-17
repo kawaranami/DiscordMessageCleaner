@@ -28,16 +28,16 @@ _STATUS_STORAGE_ERROR: Final[str] = "storage_error"
 
 _MAX_TOKEN_LENGTH: Final[int] = 100
 
-_BUTTON_CONNECT: Final[str] = "Подключиться"
-_PLACEHOLDER: Final[str] = "Введите токен Discord"
+_BUTTON_CONNECT: Final[str] = "Connect"
+_PLACEHOLDER: Final[str] = "Enter Discord token"
 
-_MSG_EMPTY_TOKEN: Final[str] = "Введите токен"
-_MSG_INVALID_TOKEN: Final[str] = "Токен недействителен"
+_MSG_EMPTY_TOKEN: Final[str] = "Token is required"
+_MSG_INVALID_TOKEN: Final[str] = "Invalid token"
 _MSG_NETWORK_ERROR: Final[str] = (
-    "Ошибка соединения с Discord. Попробуйте ещё раз."
+    "Connection error. Please try again."
 )
 _MSG_STORAGE_ERROR: Final[str] = (
-    "Не удалось сохранить токен. Перезапустите приложение."
+    "Failed to store token. Restart the application."
 )
 
 
@@ -50,11 +50,11 @@ class _ValidationWorker(QThread):
         self.result: object | None = None
         self.error: BaseException | None = None
 
-    def run(self) -> None:  # noqa: D401 - переопределение QThread.run
+    def run(self) -> None:  # noqa: D401 - overrides QThread.run
 
         try:
             self.result = self._token_manager.validate_and_store(self._token)
-        except BaseException as exc:  # noqa: BLE001 — намеренно широко
+        except BaseException as exc:  # noqa: BLE001 - intentionally broad
             self.error = exc
 
 
