@@ -61,10 +61,10 @@ def test_empty_input_rejects_without_http_request(
         f"validate_and_store вызван для whitespace-only ввода: {whitespace_input!r}"
     )
 
-    assert screen.error_text == "Введите токен", (
+    assert screen.error_text == "Token is required", (
         f"Ожидался текст ошибки 'Введите токен', получено: {screen.error_text!r}"
     )
 
-    assert blocker.args == ["Введите токен"], (
+    assert blocker.args == ["Token is required"], (
         f"Сигнал validation_failed содержит неверные аргументы: {blocker.args}"
     )

@@ -33,6 +33,10 @@ class OperationLog:
     )
 
     def __init__(self) -> None:
+        self.on_total_changed: Callable[[int], None] | None = None
+        self.reset()
+
+    def reset(self) -> None:
         self.entries: list[OperationLogEntry] = []
 
         self.scanned_messages: int = 0
@@ -40,8 +44,6 @@ class OperationLog:
         self.processed: int = 0
         self.skipped_other_authors: int = 0
         self.channels_skipped: int = 0
-
-        self.on_total_changed: Callable[[int], None] | None = None
 
         self._processed_snapshots: list[int] = []
 

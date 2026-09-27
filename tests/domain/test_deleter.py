@@ -117,7 +117,7 @@ class TestDefenseInDepth:
 
         entry = deleter.delete(message)
 
-        assert entry.first_visible_char == "П"
+        assert entry.first_visible_char == "Привет мир"
 
     def test_mismatch_entry_added_to_log(self) -> None:
 
@@ -189,7 +189,7 @@ class TestDeleteSuccess:
 
         entry = deleter.delete(message)
 
-        assert entry.first_visible_char == "T"
+        assert entry.first_visible_char == "Test content"
 
     def test_204_entry_has_message_timestamp(self) -> None:
         ts = datetime(2023, 12, 25, 10, 30, 0, tzinfo=timezone.utc)

@@ -185,7 +185,7 @@ class TestScreenRouting:
         assert main_window.stack.currentIndex() == 0
         mock_warn.assert_called_once()
         call_args = mock_warn.call_args
-        assert "Токен недействителен" in call_args[0][2]
+        assert "Invalid token" in call_args[0][2]
 
     def test_start_requested_with_confirmed_dialog(
         self, main_window: MainWindow, session: Session, controller: OperationController

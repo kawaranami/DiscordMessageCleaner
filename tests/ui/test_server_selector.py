@@ -224,18 +224,18 @@ def test_empty_server_list_shows_no_servers_message(
     screen.load_servers()
     qtbot.waitUntil(lambda: screen._worker is None, timeout=3000)
 
-    assert screen.error_text == "Доступных серверов нет"
+    assert screen.error_text == "No servers available"
     assert screen._start_button.isEnabled() is False
 
 
 @pytest.mark.parametrize(
     "error,expected_substring",
     [
-        (DiscordAuthError(body=""), "авторизации"),
-        (DiscordForbiddenError(body=""), "запрещён"),
-        (DiscordServerError(status=500, body=""), "сервера discord"),
-        (DiscordTimeoutError("timeout"), "время ожидания"),
-        (DiscordNetworkError("network"), "сети"),
+        (DiscordAuthError(body=""), "authorization"),
+        (DiscordForbiddenError(body=""), "forbidden"),
+        (DiscordServerError(status=500, body=""), "discord server"),
+        (DiscordTimeoutError("timeout"), "timed out"),
+        (DiscordNetworkError("network"), "network"),
     ],
 )
 def test_error_shows_message_and_retry_button(

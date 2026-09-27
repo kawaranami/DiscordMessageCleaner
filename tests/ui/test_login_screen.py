@@ -82,8 +82,8 @@ def test_empty_or_whitespace_token_shows_error_without_request(
     with qtbot.waitSignal(screen.validation_failed, timeout=1000) as blocker:
         qtbot.mouseClick(screen._connect_button, Qt.MouseButton.LeftButton)
 
-    assert blocker.args == ["Введите токен"]
-    assert screen.error_text == "Введите токен"
+    assert blocker.args == ["Token is required"]
+    assert screen.error_text == "Token is required"
     assert token_manager.calls == [], "HTTP-запрос не должен отправляться"
 
 
@@ -124,9 +124,9 @@ def test_successful_validation_strips_token_before_sending(
 @pytest.mark.parametrize(
     "status,expected_message",
     [
-        (_INVALID, "Токен недействителен"),
-        (_NETWORK, "Ошибка соединения с Discord. Попробуйте ещё раз."),
-        (_STORAGE, "Не удалось сохранить токен. Перезапустите приложение."),
+        (_INVALID, "Invalid token"),
+        (_NETWORK, "Connection error. Please try again."),
+        (_STORAGE, "Failed to store token. Restart the application."),
     ],
 )
 def test_error_status_mapping(

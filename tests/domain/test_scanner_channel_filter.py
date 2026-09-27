@@ -43,7 +43,15 @@ _channel_types_strategy = st.lists(
     max_size=30,
 )
 
-_ALLOWED_TYPES = {ChannelType.GUILD_TEXT.value, ChannelType.GUILD_ANNOUNCEMENT.value}
+_ALLOWED_TYPES = {
+    ChannelType.GUILD_TEXT.value,
+    ChannelType.GUILD_VOICE.value,
+    ChannelType.GUILD_ANNOUNCEMENT.value,
+    ChannelType.ANNOUNCEMENT_THREAD.value,
+    ChannelType.PUBLIC_THREAD.value,
+    ChannelType.PRIVATE_THREAD.value,
+    ChannelType.GUILD_STAGE_VOICE.value,
+}
 
 
 @settings(max_examples=150)

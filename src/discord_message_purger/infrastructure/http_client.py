@@ -29,7 +29,7 @@ _logger = logging.getLogger(__name__)
 
 _DEFAULT_BASE_URL: str = "https://discord.com/api/v10"
 
-_DEFAULT_USER_AGENT: str = "DiscordMessagePurger (desktop, 0.1.0)"
+_DEFAULT_USER_AGENT: str = "DiscordMessagePurger (desktop, 0.2.0)"
 
 _MAJOR_SEGMENTS: frozenset[str] = frozenset({"channels", "guilds", "webhooks"})
 

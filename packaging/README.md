@@ -2,7 +2,7 @@
 
 ## Требования
 
-- Python 3.11+
+- Python 3.10+
 - Установленные зависимости проекта: `pip install -e .[dev]`
 - PyInstaller: `pip install pyinstaller>=6.0`
 
