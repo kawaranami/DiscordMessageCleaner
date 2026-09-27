@@ -285,7 +285,7 @@ def test_403_on_channel_skips_and_continues(qapp):
     ]
     assert len(skipped_entries) == 1
     assert skipped_entries[0].channel_id == _CHANNEL_1_ID
-    assert "доступ запрещён" in skipped_entries[0].description
+    assert "access forbidden" in skipped_entries[0].description
 
     success_entries = [e for e in operation_log.entries if e.status == LogEntryStatus.SUCCESS]
     assert len(success_entries) == 3

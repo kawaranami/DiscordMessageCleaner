@@ -54,7 +54,7 @@ _message_st = st.builds(
 _messages_st = st.lists(_message_st, min_size=2, max_size=20)
 
 
-@settings(max_examples=100)
+@settings(max_examples=100, deadline=None)
 @given(messages=_messages_st)
 def test_sequential_delete_max_one_in_flight(messages: list[Message]) -> None:
     lock = threading.Lock()

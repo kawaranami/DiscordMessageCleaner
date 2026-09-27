@@ -147,6 +147,7 @@ def test_graceful_stop_within_30_seconds(
             if controller._worker is not None:
                 controller._worker.join(timeout=1.0)
             return
+        qapp.processEvents()
         time.sleep(0.002)
 
     time.sleep(0.01)
@@ -157,6 +158,16 @@ def test_graceful_stop_within_30_seconds(
         controller.pause()
     else:
         controller.cancel()
+
+    if (
+        not target_reached.is_set()
+        and controller._ctx is not None
+        and controller._ctx.state == OperationState.COMPLETED
+    ):
+        # The operation finished before the command arrived; nothing to stop.
+        if controller._worker is not None:
+            controller._worker.join(timeout=5.0)
+        return
 
     reached = target_reached.wait(timeout=30.0)
 

@@ -3,7 +3,13 @@ from __future__ import annotations
 import logging
 import threading
 from datetime import datetime
-from typing import TYPE_CHECKING, Iterator, Protocol, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Iterator,
+    Protocol,
+    runtime_checkable,
+)
 
 from PySide6.QtCore import QObject, Signal
 
@@ -19,12 +25,13 @@ from ..domain.exceptions import (
 )
 from ..domain.models import (
     Channel,
+    CleanupTarget,
+    DirectMessagesTarget,
     LogEntryStatus,
     Message,
     OperationLogEntry,
     OperationState,
     OperationSummary,
-    Server,
 )
 from ..domain.state import transition
 from .operation_context import OperationContext
@@ -35,6 +42,8 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+_ACTIVE_STATES = frozenset({OperationState.RUNNING, OperationState.PAUSED})
 
 
 @runtime_checkable
@@ -65,6 +74,7 @@ class OperationController(QObject):
     rate_limit_wait_ended = Signal()
     summary_ready = Signal(object)
     auth_lost = Signal()
+    operation_finished = Signal()
 
     def __init__(
         self,
@@ -82,9 +92,16 @@ class OperationController(QObject):
 
         self._ctx: OperationContext | None = None
         self._worker: threading.Thread | None = None
+        self._worker_running: bool = False
+        self._restart_on_resume: bool = False
+        self._state_lock = threading.Lock()
+
+    @property
+    def is_busy(self) -> bool:
+        return self._worker_running
 
 
-    def start(self, server: Server, user_id: str) -> None:
+    def start(self, server: CleanupTarget, user_id: str) -> None:
         if not self._session.consent_granted:
             entry = OperationLogEntry(
                 timestamp_local=datetime.now().astimezone(),
@@ -118,12 +135,24 @@ class OperationController(QObject):
                 "authenticated_user_id is missing or empty"
             )
 
+        if self._worker_running:
+            logger.warning("Start ignored: previous operation is still stopping")
+            return
+
+        if self._ctx is not None:
+            self._operation_log.reset()
+
         self._ctx = OperationContext(
             state=OperationState.IDLE,
             server=server,
             authenticated_user_id=user_id,
         )
 
+        self._launch_worker()
+
+    def _launch_worker(self) -> None:
+        self._restart_on_resume = False
+        self._worker_running = True
         self._worker = threading.Thread(
             target=self._worker_run,
             name="OperationWorker",
@@ -132,24 +161,52 @@ class OperationController(QObject):
         self._worker.start()
 
     def pause(self) -> None:
-        if self._ctx is None:
+        ctx = self._ctx
+        if ctx is None:
             return
-        self._ctx.pause_event.set()
-        self._transition_state(OperationState.PAUSED)
+        self._transition_if(
+            {OperationState.RUNNING},
+            OperationState.PAUSED,
+            before=ctx.pause_event.set,
+        )
 
     def resume(self) -> None:
-        if self._ctx is None:
+        ctx = self._ctx
+        if ctx is None:
             return
-        self._ctx.pause_event.clear()
-        self._ctx.resume_event.set()
-        self._transition_state(OperationState.RUNNING)
+
+        def _wake() -> None:
+            ctx.pause_event.clear()
+            ctx.resume_event.set()
+
+        if not self._transition_if(
+            {OperationState.PAUSED}, OperationState.RUNNING, before=_wake
+        ):
+            return
+
+        if self._restart_on_resume:
+            if self._worker is not None:
+                self._worker.join(timeout=5.0)
+            self._ctx.resume_event.clear()
+            logger.info("Restarting operation after transient error")
+            self._launch_worker()
 
     def cancel(self) -> None:
-        if self._ctx is None:
+        ctx = self._ctx
+        if ctx is None:
             return
-        self._ctx.cancel_event.set()
-        self._ctx.resume_event.set()
-        self._transition_state(OperationState.CANCELED)
+        self._restart_on_resume = False
+
+        def _stop() -> None:
+            ctx.cancel_event.set()
+            ctx.resume_event.set()
+
+        if not self._transition_if(
+            {OperationState.RUNNING, OperationState.PAUSED},
+            OperationState.CANCELED,
+            before=_stop,
+        ) and ctx.state is OperationState.IDLE:
+            _stop()
 
     def shutdown(self, timeout_s: float) -> bool:
         self.cancel()
@@ -164,16 +221,21 @@ class OperationController(QObject):
 
         try:
             logger.info("Worker started")
-            self._transition_state(OperationState.RUNNING)
+            self._transition_if({OperationState.IDLE}, OperationState.RUNNING)
+            if self._ctx.check_cancelled():
+                self._transition_if(
+                    {OperationState.RUNNING}, OperationState.CANCELED
+                )
+                return
 
-            server = self._ctx.server
-            assert server is not None  # noqa: S101
-            logger.info("Fetching channels for guild %s (%s)", server.name, server.id)
-            channels = self._scanner.list_channels(server.id)
+            target = self._ctx.server
+            assert target is not None  # noqa: S101
+            channels = self._resolve_channels(target)
             logger.info("Channels received: %d", len(channels))
             for ch in channels:
                 logger.debug("  Channel %s (%s, type=%s)", ch.name, ch.id, ch.type)
 
+            base_processed = self._operation_log.processed
             all_messages: list[Message] = []
             for channel in channels:
                 if self._ctx.check_cancelled():
@@ -190,14 +252,12 @@ class OperationController(QObject):
                         return
                     all_messages.append(message)
                     channel_msg_count += 1
-                    self._operation_log.update_total(len(all_messages))
-                    self.progress_changed.emit(0, len(all_messages))
+                    self._update_total(base_processed + len(all_messages))
                 logger.info("Channel %s: %d user messages found", channel.name, channel_msg_count)
 
             logger.info("Phase 1 complete. Total found: %d", len(all_messages))
 
-            self._operation_log.update_total(len(all_messages))
-            self.progress_changed.emit(0, len(all_messages))
+            self._update_total(base_processed + len(all_messages))
 
             for message in all_messages:
                 if self._ctx.check_cancelled():
@@ -212,9 +272,13 @@ class OperationController(QObject):
                     self._operation_log.found_total,
                 )
 
-            self._transition_state(OperationState.COMPLETED)
-            summary = self._operation_log.summary()
-            self.summary_ready.emit(summary)
+            if not self._ctx.wait_if_paused():
+                return
+            if self._transition_if(
+                {OperationState.RUNNING}, OperationState.COMPLETED
+            ):
+                summary = self._operation_log.summary()
+                self.summary_ready.emit(summary)
 
         except DiscordAuthError:
             self._handle_auth_error()
@@ -231,11 +295,27 @@ class OperationController(QObject):
             import traceback
             traceback.print_exc()
             self._handle_fatal_error("Unexpected error")
+        finally:
+            self._worker_running = False
+            self.operation_finished.emit()
 
+    def _resolve_channels(self, target: CleanupTarget) -> list[Channel]:
+        if isinstance(target, DirectMessagesTarget):
+            logger.info(
+                "Using %d selected direct message conversation(s)",
+                len(target.channels),
+            )
+            return list(target.channels)
+        logger.info("Fetching channels for guild %s (%s)", target.name, target.id)
+        return self._scanner.list_channels(target.id)
+
+    def _update_total(self, total: int) -> None:
+        self._operation_log.update_total(total)
+        self.progress_changed.emit(self._operation_log.processed, total)
 
     def _handle_auth_error(self) -> None:
         self._session.clear_token()
-        self._transition_state(OperationState.CANCELED)
+        self._transition_if(_ACTIVE_STATES, OperationState.CANCELED)
         self.auth_lost.emit()
 
     def _handle_transient_error(self, exc: Exception) -> None:
@@ -252,7 +332,12 @@ class OperationController(QObject):
             description=description,
         )
         self._emit_log_entry(entry)
-        self._transition_state(OperationState.PAUSED)
+        if self._ctx is None or self._ctx.check_cancelled():
+            return
+        self._restart_on_resume = True
+        self._transition_if({OperationState.RUNNING}, OperationState.PAUSED)
+        if self._ctx.state is not OperationState.PAUSED:
+            self._restart_on_resume = False
 
     def _handle_fatal_error(self, description: str) -> None:
         entry = OperationLogEntry(
@@ -267,15 +352,27 @@ class OperationController(QObject):
             description=description[:500],
         )
         self._emit_log_entry(entry)
-        self._transition_state(OperationState.ERROR)
+        self._transition_if(_ACTIVE_STATES, OperationState.ERROR)
 
 
-    def _transition_state(self, target: OperationState) -> None:
-        if self._ctx is None:
-            return
-        new_state = transition(self._ctx.state, target)
-        self._ctx.state = new_state
-        self.state_changed.emit(new_state)
+    def _transition_if(
+        self,
+        allowed_from: set[OperationState] | frozenset[OperationState],
+        target: OperationState,
+        *,
+        before: Callable[[], None] | None = None,
+    ) -> bool:
+        ctx = self._ctx
+        if ctx is None:
+            return False
+        with self._state_lock:
+            if ctx.state not in allowed_from:
+                return False
+            if before is not None:
+                before()
+            ctx.state = transition(ctx.state, target)
+        self.state_changed.emit(target)
+        return True
 
     def _set_state_force(self, target: OperationState) -> None:
         if self._ctx is not None:

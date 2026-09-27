@@ -12,14 +12,20 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QStackedWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
-from discord_message_purger.domain.models import OperationState
+from discord_message_purger.domain.models import (
+    DirectMessagesTarget,
+    OperationState,
+    Server,
+)
 from discord_message_purger.ui.cancel_confirm_dialog import CancelConfirmDialog
 from discord_message_purger.ui.confirmation_dialog import ConfirmationDialog
 from discord_message_purger.ui.consent_dialog import ConsentDialog
+from discord_message_purger.ui.dm_selector import DirectMessagesScreen
 from discord_message_purger.ui.login_screen import LoginScreen
 from discord_message_purger.ui.progress_display import ProgressDisplay
 from discord_message_purger.ui.server_selector import ServerSelectorScreen
@@ -35,9 +41,19 @@ _PAGE_LOGIN = 0
 _PAGE_SERVER_SELECTOR = 1
 _PAGE_PROGRESS = 2
 
+_TAB_SERVERS = "Servers"
+_TAB_DIRECT_MESSAGES = "Direct messages"
+
 _BUTTON_PAUSE = "Pause"
 _BUTTON_RESUME = "Resume"
 _BUTTON_CANCEL = "Cancel"
+_BUTTON_NEW = "New cleanup"
+
+_TERMINAL_STATES = (
+    OperationState.COMPLETED,
+    OperationState.CANCELED,
+    OperationState.ERROR,
+)
 
 _MSG_AUTH_LOST = "Invalid token"
 
@@ -45,23 +61,23 @@ _WINDOW_TITLE = "Discord Message Purger"
 
 _DISCORD_STYLESHEET = """
 QMainWindow, QWidget {
-    background-color:
-    color:
+    background-color: #313338;
+    color: #dbdee1;
     font-family: 'Segoe UI', 'Whitney', sans-serif;
     font-size: 14px;
 }
 QPlainTextEdit {
-    background-color:
-    color:
-    border: 1px solid
+    background-color: #2b2d31;
+    color: #dbdee1;
+    border: 1px solid #1e1f22;
     border-radius: 8px;
     padding: 8px;
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 13px;
 }
 QPushButton {
-    background-color:
-    color:
+    background-color: #5865f2;
+    color: #ffffff;
     border: none;
     border-radius: 4px;
     padding: 8px 16px;
@@ -70,31 +86,41 @@ QPushButton {
     min-height: 32px;
 }
 QPushButton:hover {
-    background-color:
+    background-color: #4752c4;
 }
 QPushButton:pressed {
-    background-color:
+    background-color: #3c45a5;
 }
 QPushButton:disabled {
-    background-color:
-    color:
+    background-color: #4e5058;
+    color: #80848e;
+}
+QPushButton#dangerButton {
+    background-color: #da373c;
+}
+QPushButton#dangerButton:hover {
+    background-color: #a12828;
+}
+QPushButton#dangerButton:disabled {
+    background-color: #4e5058;
+    color: #80848e;
 }
 QLineEdit {
-    background-color:
-    color:
-    border: 1px solid
+    background-color: #1e1f22;
+    color: #dbdee1;
+    border: 1px solid #1e1f22;
     border-radius: 4px;
     padding: 8px 12px;
     font-size: 14px;
     min-height: 28px;
 }
 QLineEdit:focus {
-    border-color:
+    border-color: #5865f2;
 }
 QListWidget {
-    background-color:
-    color:
-    border: 1px solid
+    background-color: #2b2d31;
+    color: #dbdee1;
+    border: 1px solid #1e1f22;
     border-radius: 8px;
     padding: 4px;
     font-size: 14px;
@@ -104,37 +130,68 @@ QListWidget::item {
     border-radius: 4px;
 }
 QListWidget::item:selected {
-    background-color:
-    color:
+    background-color: #404249;
+    color: #ffffff;
 }
 QListWidget::item:hover {
-    background-color:
+    background-color: #35373c;
+}
+QListWidget::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 2px solid #80848e;
+    background-color: #1e1f22;
+}
+QListWidget::indicator:checked {
+    background-color: #5865f2;
+    border-color: #5865f2;
+}
+QTabWidget::pane {
+    border: none;
+}
+QTabBar::tab {
+    background-color: #2b2d31;
+    color: #949ba4;
+    padding: 8px 18px;
+    margin-right: 4px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    font-weight: bold;
+}
+QTabBar::tab:selected {
+    background-color: #404249;
+    color: #ffffff;
+}
+QTabBar::tab:hover {
+    color: #dbdee1;
 }
 QLabel {
-    color:
+    color: #dbdee1;
     font-size: 14px;
 }
-QLabel
-    color:
+QLabel#loginErrorLabel, QLabel#serverSelectorErrorLabel,
+QLabel#dmSelectorErrorLabel {
+    color: #f23f43;
     font-size: 13px;
 }
-QLabel
-    color:
+QLabel#rate_limit_label {
+    color: #f0b232;
     font-size: 13px;
     padding: 4px 8px;
 }
-QLabel
-    color:
+QLabel#statsHeader {
+    color: #ffffff;
     font-size: 13px;
     font-weight: bold;
     padding: 4px 8px;
 }
-QLabel
-    color:
+QLabel#etaLabel, QLabel#hintLabel {
+    color: #949ba4;
     font-size: 13px;
 }
 QCheckBox {
-    color:
+    color: #dbdee1;
     font-size: 14px;
     spacing: 8px;
 }
@@ -142,20 +199,20 @@ QCheckBox::indicator {
     width: 18px;
     height: 18px;
     border-radius: 4px;
-    border: 2px solid
-    background-color:
+    border: 2px solid #80848e;
+    background-color: #1e1f22;
 }
 QCheckBox::indicator:checked {
-    background-color:
-    border-color:
+    background-color: #5865f2;
+    border-color: #5865f2;
 }
 QDialog {
-    background-color:
-    color:
+    background-color: #313338;
+    color: #dbdee1;
 }
 QMessageBox {
-    background-color:
-    color:
+    background-color: #313338;
+    color: #dbdee1;
 }
 """
 
@@ -175,6 +232,7 @@ class MainWindow(QMainWindow):
         super().__init__(parent)
         self._controller = controller
         self._session = session
+        self._state: OperationState = OperationState.IDLE
 
         self.setWindowTitle(_WINDOW_TITLE)
         self.setMinimumSize(900, 600)
@@ -182,6 +240,7 @@ class MainWindow(QMainWindow):
 
         self._login_screen = LoginScreen(token_manager, self)
         self._server_selector = ServerSelectorScreen(http_client, self)
+        self._dm_selector = DirectMessagesScreen(http_client, self)
         self._progress_display = ProgressDisplay(self)
 
         self._build_ui()
@@ -200,28 +259,36 @@ class MainWindow(QMainWindow):
 
         self.setStyleSheet(_DISCORD_STYLESHEET)
 
+        self._selector_tabs = QTabWidget(self)
+        self._selector_tabs.addTab(self._server_selector, _TAB_SERVERS)
+        self._selector_tabs.addTab(self._dm_selector, _TAB_DIRECT_MESSAGES)
+
         self._stack = QStackedWidget(self)
         self._stack.addWidget(self._login_screen)
-        self._stack.addWidget(self._server_selector)
+        self._stack.addWidget(self._selector_tabs)
         self._stack.addWidget(self._progress_display)
 
         self._pause_button = QPushButton(_BUTTON_PAUSE, self)
         self._resume_button = QPushButton(_BUTTON_RESUME, self)
         self._cancel_button = QPushButton(_BUTTON_CANCEL, self)
+        self._new_button = QPushButton(_BUTTON_NEW, self)
 
         self._pause_button.setAutoDefault(False)
         self._resume_button.setAutoDefault(False)
         self._cancel_button.setAutoDefault(False)
+        self._new_button.setAutoDefault(False)
 
         self._pause_button.clicked.connect(self._on_pause_clicked)
         self._resume_button.clicked.connect(self._on_resume_clicked)
         self._cancel_button.clicked.connect(self._on_cancel_clicked)
+        self._new_button.clicked.connect(self._on_new_clicked)
 
         button_row = QHBoxLayout()
         button_row.addStretch(1)
         button_row.addWidget(self._pause_button)
         button_row.addWidget(self._resume_button)
         button_row.addWidget(self._cancel_button)
+        button_row.addWidget(self._new_button)
 
         central = QWidget(self)
         layout = QVBoxLayout(central)
@@ -237,6 +304,9 @@ class MainWindow(QMainWindow):
         self._server_selector.start_requested.connect(
             self._on_start_requested
         )
+        self._dm_selector.start_requested.connect(self._on_start_requested)
+
+        self._stack.currentChanged.connect(self._refresh_new_button)
 
     def _connect_controller_signals(self) -> None:
 
@@ -258,6 +328,8 @@ class MainWindow(QMainWindow):
         )
 
         self._controller.auth_lost.connect(self._on_auth_lost)
+
+        self._controller.operation_finished.connect(self._refresh_new_button)
 
 
     def _show_consent_dialog(self) -> None:
@@ -301,13 +373,16 @@ class MainWindow(QMainWindow):
 
         self._stack.setCurrentIndex(_PAGE_SERVER_SELECTOR)
         self._server_selector.load_servers()
+        self._dm_selector.clear()
+        self._dm_selector.load_channels()
 
     @Slot(object)
     def _on_start_requested(self, server: object) -> None:
 
-        from discord_message_purger.domain.models import Server
+        if not isinstance(server, (Server, DirectMessagesTarget)):
+            return
 
-        if not isinstance(server, Server):
+        if self._controller.is_busy:
             return
 
         dialog = ConfirmationDialog(server, self)
@@ -316,6 +391,7 @@ class MainWindow(QMainWindow):
         if not dialog.confirmed:
             return
 
+        self._progress_display.reset()
         self._stack.setCurrentIndex(_PAGE_PROGRESS)
         self._controller.start(server, self._session.authenticated_user_id or "")
 
@@ -361,6 +437,15 @@ class MainWindow(QMainWindow):
     def _on_cancel_clicked(self) -> None:
         self._controller.cancel()
 
+    @Slot()
+    def _on_new_clicked(self) -> None:
+        if self._controller.is_busy:
+            return
+        if self._session.token is None:
+            self._stack.setCurrentIndex(_PAGE_LOGIN)
+            return
+        self._stack.setCurrentIndex(_PAGE_SERVER_SELECTOR)
+
 
     def _update_buttons(self, state: OperationState) -> None:
 
@@ -386,6 +471,18 @@ class MainWindow(QMainWindow):
             self._cancel_button.setEnabled(False)
             self._cancel_button.setVisible(False)
 
+        self._state = state
+        self._refresh_new_button()
+
+    @Slot()
+    def _refresh_new_button(self) -> None:
+
+        visible = (
+            self._state in _TERMINAL_STATES
+            and self._stack.currentIndex() == _PAGE_PROGRESS
+        )
+        self._new_button.setVisible(visible)
+        self._new_button.setEnabled(visible and not self._controller.is_busy)
 
     @property
     def stack(self) -> QStackedWidget:
@@ -398,6 +495,14 @@ class MainWindow(QMainWindow):
     @property
     def server_selector(self) -> ServerSelectorScreen:
         return self._server_selector
+
+    @property
+    def dm_selector(self) -> DirectMessagesScreen:
+        return self._dm_selector
+
+    @property
+    def selector_tabs(self) -> QTabWidget:
+        return self._selector_tabs
 
     @property
     def progress_display(self) -> ProgressDisplay:
@@ -414,6 +519,10 @@ class MainWindow(QMainWindow):
     @property
     def cancel_button(self) -> QPushButton:
         return self._cancel_button
+
+    @property
+    def new_button(self) -> QPushButton:
+        return self._new_button
 
 
 __all__ = ["MainWindow"]

@@ -71,3 +71,7 @@ pyinstaller_dist/
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# Runtime logs
+discord_purger.log
+discord_purger_crash.log

@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field
 
-from ..domain.models import OperationState, Server
+from ..domain.models import CleanupTarget, OperationState
 
 
 @dataclass
@@ -13,7 +13,7 @@ class OperationContext:
     resume_event: threading.Event = field(default_factory=threading.Event)
     cancel_event: threading.Event = field(default_factory=threading.Event)
     state: OperationState = OperationState.IDLE
-    server: Server | None = None
+    server: CleanupTarget | None = None
     authenticated_user_id: str | None = None
 
     def wait_if_paused(self) -> bool:

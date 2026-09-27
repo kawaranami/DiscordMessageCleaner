@@ -12,7 +12,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from discord_message_purger.domain.models import Server
+from discord_message_purger.domain.models import (
+    CleanupTarget,
+    DirectMessagesTarget,
+)
 
 
 _BUTTON_CONFIRM = "Confirm"
@@ -29,20 +32,47 @@ _TITLE_TEMPLATE = "Confirm operation on server '{name}'"
 
 _INPUT_PLACEHOLDER = "Type the server name to confirm"
 
+_DM_CONFIRM_WORD = "DELETE"
+
+_DM_MESSAGE_TEMPLATE = (
+    "All messages from your account in {count} selected direct message "
+    "{noun} will be deleted:\n\n{names}\n\n"
+    "Messages from other participants are not affected. "
+    "This action cannot be undone."
+)
+
+_DM_TITLE = "Confirm deletion in direct messages"
+
+_DM_INPUT_PLACEHOLDER = f"Type {_DM_CONFIRM_WORD} to confirm"
+
+_DM_MAX_LISTED = 10
+
 
 class ConfirmationDialog(QDialog):
 
-    def __init__(self, server: Server, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, server: CleanupTarget, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
 
-        self._server: Server = server
-        self._expected_name: str = server.name
+        self._server: CleanupTarget = server
         self._confirmed: bool = False
+
+        if isinstance(server, DirectMessagesTarget):
+            self._expected_name: str = _DM_CONFIRM_WORD
+            self._message_text = self._dm_message(server)
+            self._placeholder = _DM_INPUT_PLACEHOLDER
+            title = _DM_TITLE
+        else:
+            self._expected_name = server.name
+            self._message_text = _MESSAGE_TEMPLATE.format(name=server.name)
+            self._placeholder = _INPUT_PLACEHOLDER
+            title = _TITLE_TEMPLATE.format(name=server.name)
 
         self.setModal(True)
         self.setWindowModality(Qt.WindowModality.ApplicationModal)
 
-        self.setWindowTitle(_TITLE_TEMPLATE.format(name=self._expected_name))
+        self.setWindowTitle(title)
 
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
@@ -51,7 +81,7 @@ class ConfirmationDialog(QDialog):
 
 
     @property
-    def server(self) -> Server:
+    def server(self) -> CleanupTarget:
 
         return self._server
 
@@ -78,8 +108,7 @@ class ConfirmationDialog(QDialog):
 
     def _build_ui(self) -> None:
 
-        message_text = _MESSAGE_TEMPLATE.format(name=self._expected_name)
-        self._message_label = QLabel(message_text, self)
+        self._message_label = QLabel(self._message_text, self)
         self._message_label.setWordWrap(True)
         self._message_label.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
@@ -87,7 +116,7 @@ class ConfirmationDialog(QDialog):
 
         self._input = QLineEdit(self)
         self._input.setMaxLength(_INPUT_MAX_LENGTH)
-        self._input.setPlaceholderText(_INPUT_PLACEHOLDER)
+        self._input.setPlaceholderText(self._placeholder)
 
         self._button_box = QDialogButtonBox(self)
         self._confirm_button = QPushButton(_BUTTON_CONFIRM, self)
@@ -124,6 +153,20 @@ class ConfirmationDialog(QDialog):
 
         self._recompute_confirm_enabled()
 
+
+    @staticmethod
+    def _dm_message(target: DirectMessagesTarget) -> str:
+
+        names = [f"  • {channel.name}" for channel in target.channels]
+        if len(names) > _DM_MAX_LISTED:
+            hidden = len(names) - _DM_MAX_LISTED
+            names = names[:_DM_MAX_LISTED] + [f"  … and {hidden} more"]
+        count = len(target.channels)
+        return _DM_MESSAGE_TEMPLATE.format(
+            count=count,
+            noun="conversation" if count == 1 else "conversations",
+            names="\n".join(names),
+        )
 
     def _on_text_changed(self, _text: str) -> None:
 

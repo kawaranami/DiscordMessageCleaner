@@ -49,6 +49,10 @@ _SUPPORTED_CHANNEL_TYPE_VALUES: frozenset[int] = frozenset(
     }
 )
 
+# RECIPIENT_ADD, RECIPIENT_REMOVE, CALL, CHANNEL_NAME_CHANGE,
+# CHANNEL_ICON_CHANGE, THREAD_STARTER_MESSAGE: Discord rejects deletion of these.
+_NON_DELETABLE_MESSAGE_TYPES: frozenset[int] = frozenset({1, 2, 3, 4, 5, 21})
+
 _HISTORY_TRANSIENT_EXCEPTIONS: tuple[type[Exception], ...] = (
     DiscordServerError,
     DiscordNetworkError,
@@ -160,7 +164,8 @@ class MessageScanner:
                 self._operation_log.scanned_messages += 1
 
                 if message.author_id == authenticated_user_id:
-                    yield message
+                    if self._is_deletable(raw):
+                        yield message
                 else:
                     self._operation_log.skipped_other_authors += 1
 
@@ -239,6 +244,12 @@ class MessageScanner:
             content=content,
             timestamp=timestamp_value,
         )
+
+    @staticmethod
+    def _is_deletable(raw: dict) -> bool:
+
+        message_type = raw.get("type")
+        return message_type not in _NON_DELETABLE_MESSAGE_TYPES
 
     @staticmethod
     def _smaller_snowflake(current: str | None, candidate: str) -> str:

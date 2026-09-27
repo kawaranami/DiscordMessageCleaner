@@ -130,7 +130,7 @@ def test_save_log_cancellation_does_not_write_file_or_show_error(
 
     assert len(_FakeQFileDialog.calls) == 1
     _, caption, _directory, file_filter = _FakeQFileDialog.calls[0]
-    assert caption == "Сохранить журнал операции"
+    assert caption == "Save operation log"
     assert "*.txt" in file_filter
 
     assert open_calls == []
@@ -200,7 +200,7 @@ def test_save_log_oserror_shows_critical_with_path_and_reason(
 
     assert len(_FakeQMessageBox.calls) == 1
     call = _FakeQMessageBox.calls[0]
-    assert call["title"] == "Не удалось сохранить журнал"
+    assert call["title"] == "Failed to save log"
     assert str(target) in call["message"]
     assert expected_reason in call["message"]
     assert call["parent"] is widget

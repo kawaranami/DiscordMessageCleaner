@@ -192,6 +192,17 @@ class ProgressDisplay(QWidget):
         )
         self._append_line(self._summary_text)
 
+    def reset(self) -> None:
+
+        self._entries.clear()
+        self._processed_snapshots.clear()
+        self._processed = 0
+        self._total = 0
+        self._summary_text = None
+        self.hide_rate_limit_wait()
+        self._log_view.clear()
+        self._update_stats_header()
+
     def save_log_to_file(self) -> None:
 
         path, _selected_filter = QFileDialog.getSaveFileName(

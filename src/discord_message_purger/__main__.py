@@ -20,6 +20,9 @@ from discord_message_purger.infrastructure.rate_limiter import RateLimiter
 from discord_message_purger.ui.main_window import MainWindow
 
 
+_MIN_VISIBLE_WAIT_S = 1.0
+
+
 def _setup_logging() -> Path:
 
     if getattr(sys, "frozen", False):
@@ -72,15 +75,18 @@ class _LazyDeleter:
         self._session = session
         self._rate_limiter = rate_limiter
         self._deleter: MessageDeleter | None = None
+        self._deleter_user_id: str | None = None
 
     def delete(self, message: Message) -> OperationLogEntry:
-        if self._deleter is None:
+        user_id = self._session.authenticated_user_id or ""
+        if self._deleter is None or self._deleter_user_id != user_id:
             self._deleter = MessageDeleter(
                 http=self._http,
                 operation_log=self._operation_log,
-                authenticated_user_id=self._session.authenticated_user_id or "",
+                authenticated_user_id=user_id,
                 rate_limiter=self._rate_limiter,
             )
+            self._deleter_user_id = user_id
         return self._deleter.delete(message)
 
 
@@ -97,7 +103,20 @@ def main() -> None:
 
     session = Session()
 
-    rate_limiter = RateLimiter()
+    controller: OperationController | None = None
+
+    def _on_wait_started(seconds: float, reason: str) -> None:
+        if controller is not None and seconds >= _MIN_VISIBLE_WAIT_S:
+            controller.rate_limit_wait_started.emit(seconds, reason)
+
+    def _on_wait_ended() -> None:
+        if controller is not None:
+            controller.rate_limit_wait_ended.emit()
+
+    rate_limiter = RateLimiter(
+        on_wait_started=_on_wait_started,
+        on_wait_ended=_on_wait_ended,
+    )
     http_client = DiscordHttpClient(
         token_provider=lambda: session.token,
         rate_limiter=rate_limiter,
